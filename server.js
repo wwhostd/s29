@@ -1,18 +1,48 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-let logins = [];
+// حفظ البيانات في ملف عشان ما تنحذف
+const DATA_FILE = './logins.json';
+
+function loadData() {
+    try {
+        if (fs.existsSync(DATA_FILE)) {
+            return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        }
+    } catch (e) {}
+    return [];
+}
+
+function saveData(data) {
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data));
+    } catch (e) {}
+}
+
+let logins = loadData();
 
 // استقبال الدخول الجديد
 app.get('/log', (req, res) => {
     const now = new Date();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const day = now.getDate();
+    const month = months[now.getMonth()];
+    const year = now.getFullYear();
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    
     const login = {
         id: Date.now(),
-        name: decodeURIComponent(req.query.name || 'Unknown'),
+        name: decodeURIComponent(req.query.name || 'Unknown').replace(/\+/g, ' '),
         sid: req.query.sid || '0',
         key: req.query.key || 'Unknown',
         hp: req.query.hp || '0',
@@ -23,32 +53,38 @@ app.get('/log', (req, res) => {
         y: req.query.y || '0',
         z: req.query.z || '0',
         h: req.query.h || '0',
-        zone: decodeURIComponent(req.query.zone || 'Unknown'),
-        str: decodeURIComponent(req.query.str || 'Unknown'),
-        veh: decodeURIComponent(req.query.veh || 'OnFoot'),
-        plt: decodeURIComponent(req.query.plt || 'NA'),
+        zone: decodeURIComponent(req.query.zone || 'Unknown').replace(/\+/g, ' '),
+        str: decodeURIComponent(req.query.str || 'Unknown').replace(/\+/g, ' '),
+        veh: decodeURIComponent(req.query.veh || 'OnFoot').replace(/\+/g, ' '),
+        plt: decodeURIComponent(req.query.plt || 'NA').replace(/\+/g, ' '),
         vhp: req.query.vhp || 'NA',
         mdl: req.query.mdl || 'Unknown',
         pls: req.query.pls || '0',
         type: req.query.type || 'authorized',
-        date: now.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }),
-        time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+        serverip: decodeURIComponent(req.query.sip || 'Unknown').replace(/\+/g, ' '),
+        date: month + ' ' + day + ', ' + year,
+        time: hours + ':' + minutes + ':' + seconds + ' ' + ampm
     };
     
     logins.unshift(login);
     if (logins.length > 500) logins = logins.slice(0, 500);
+    saveData(logins);
     
-    console.log(`[${login.type.toUpperCase()}] ${login.name} - Key: ${login.key}`);
+    console.log('[' + login.type.toUpperCase() + '] ' + login.name + ' - Key: ' + login.key);
     res.send('OK');
 });
 
 app.get('/api/logins', (req, res) => res.json(logins));
+
 app.delete('/api/logins/:id', (req, res) => {
     logins = logins.filter(l => l.id !== parseInt(req.params.id));
+    saveData(logins);
     res.json({ success: true });
 });
+
 app.delete('/api/logins', (req, res) => {
     logins = [];
+    saveData(logins);
     res.json({ success: true });
 });
 
@@ -89,10 +125,7 @@ app.get('/', (req, res) => {
             width: 8px; height: 8px; background: #2ed573;
             border-radius: 50%; animation: pulse 1.5s infinite;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .stats-bar { display: flex; justify-content: center; gap: 25px; margin: 30px 0; flex-wrap: wrap; }
         .stat-card {
             background: rgba(255, 165, 0, 0.08);
@@ -105,13 +138,8 @@ app.get('/', (req, res) => {
         .stat-label { color: #666; font-size: 0.85em; margin-top: 5px; }
         .controls { display: flex; justify-content: center; gap: 12px; margin: 25px 0; flex-wrap: wrap; }
         .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
+            padding: 12px 24px; border: none; border-radius: 8px;
+            font-size: 0.9em; font-weight: 600; cursor: pointer; transition: all 0.2s;
         }
         .btn-primary { background: linear-gradient(135deg, #ffa500, #ff6b00); color: #000; }
         .btn-primary:hover { transform: scale(1.03); box-shadow: 0 5px 20px rgba(255, 165, 0, 0.3); }
@@ -120,41 +148,30 @@ app.get('/', (req, res) => {
         .btn-secondary { background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.15); }
         .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
         .search-box {
-            width: 100%; max-width: 450px;
-            padding: 12px 20px;
-            border: 1px solid rgba(255, 165, 0, 0.25);
-            border-radius: 25px;
-            background: rgba(0, 0, 0, 0.3);
-            color: #fff;
-            font-size: 0.95em;
-            margin: 0 auto 25px;
-            display: block;
+            width: 100%; max-width: 450px; padding: 12px 20px;
+            border: 1px solid rgba(255, 165, 0, 0.25); border-radius: 25px;
+            background: rgba(0, 0, 0, 0.3); color: #fff; font-size: 0.95em;
+            margin: 0 auto 25px; display: block;
         }
         .search-box:focus { outline: none; border-color: #ffa500; }
-        .logins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+        .logins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; }
         .login-card {
             background: rgba(18, 18, 28, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.3s;
+            border-radius: 16px; overflow: hidden; transition: all 0.3s;
         }
         .login-card:hover { border-color: rgba(255, 165, 0, 0.4); transform: translateY(-5px); }
         .login-card.unauthorized { border-color: rgba(255, 71, 87, 0.5); }
         .login-card.unauthorized .card-header { background: linear-gradient(135deg, rgba(255, 71, 87, 0.2), rgba(255, 71, 87, 0.1)); }
         .card-header {
             background: linear-gradient(135deg, rgba(255, 165, 0, 0.15), rgba(255, 165, 0, 0.05));
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;
         }
         .player-info { display: flex; align-items: center; gap: 12px; }
         .player-avatar {
             width: 45px; height: 45px;
             background: linear-gradient(135deg, #ffa500, #ff6b00);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 1.3em; font-weight: 700; color: #000;
         }
         .login-card.unauthorized .player-avatar { background: linear-gradient(135deg, #ff4757, #ff3344); }
@@ -162,41 +179,26 @@ app.get('/', (req, res) => {
         .player-id { color: #ffa500; font-size: 0.85em; }
         .login-card.unauthorized .player-id { color: #ff4757; }
         .header-right { text-align: right; }
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.7em;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
+        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.7em; font-weight: 600; text-transform: uppercase; }
         .status-authorized { background: rgba(46, 213, 115, 0.2); color: #2ed573; }
         .status-unauthorized { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
-        .login-datetime { color: #555; font-size: 0.8em; margin-top: 6px; }
+        .login-datetime { color: #888; font-size: 0.78em; margin-top: 6px; font-weight: 500; }
         .card-body { padding: 16px 20px; }
-        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .info-item {
-            background: rgba(0, 0, 0, 0.25);
-            padding: 10px 12px;
-            border-radius: 8px;
-        }
-        .info-label { color: #555; font-size: 0.75em; margin-bottom: 3px; }
-        .info-value { color: #ddd; font-size: 0.9em; font-weight: 500; word-break: break-all; }
-        .auth-key {
-            grid-column: span 2;
-            background: rgba(255, 165, 0, 0.08);
-            border: 1px solid rgba(255, 165, 0, 0.2);
-        }
-        .auth-key .info-value { font-family: 'Courier New', monospace; font-size: 0.8em; color: #ffa500; }
+        .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .info-item { background: rgba(0, 0, 0, 0.25); padding: 10px 12px; border-radius: 8px; }
+        .info-label { color: #555; font-size: 0.72em; margin-bottom: 3px; }
+        .info-value { color: #ddd; font-size: 0.88em; font-weight: 500; word-break: break-all; }
+        .auth-key { grid-column: span 3; background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.2); }
+        .auth-key .info-value { font-family: 'Courier New', monospace; font-size: 0.78em; color: #ffa500; }
+        .server-ip { grid-column: span 3; background: rgba(52, 152, 219, 0.1); border: 1px solid rgba(52, 152, 219, 0.3); }
+        .server-ip .info-value { color: #3498db; }
         .card-actions { padding: 12px 20px; display: flex; gap: 10px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
-        .action-btn {
-            flex: 1; padding: 8px; border: none; border-radius: 6px;
-            font-size: 0.85em; cursor: pointer; transition: all 0.2s;
-        }
+        .action-btn { flex: 1; padding: 8px; border: none; border-radius: 6px; font-size: 0.85em; cursor: pointer; transition: all 0.2s; }
         .action-btn.copy { background: rgba(255, 165, 0, 0.15); color: #ffa500; }
         .action-btn.copy:hover { background: rgba(255, 165, 0, 0.25); }
         .action-btn.delete { background: rgba(255, 71, 87, 0.15); color: #ff4757; }
         .action-btn.delete:hover { background: rgba(255, 71, 87, 0.25); }
-        .empty-state { text-align: center; padding: 60px 20px; color: #444; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #444; grid-column: span 2; }
         .empty-icon { font-size: 4em; margin-bottom: 15px; }
         .toast {
             position: fixed; bottom: 25px; right: 25px;
@@ -205,11 +207,11 @@ app.get('/', (req, res) => {
             transform: translateX(150%); transition: transform 0.3s; z-index: 1000;
         }
         .toast.show { transform: translateX(0); }
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .logins-grid { grid-template-columns: 1fr; }
+            .info-grid { grid-template-columns: repeat(2, 1fr); }
+            .auth-key, .server-ip { grid-column: span 2; }
             .logo { font-size: 2.5em; }
-            .info-grid { grid-template-columns: 1fr; }
-            .auth-key { grid-column: span 1; }
         }
     </style>
 </head>
@@ -235,16 +237,13 @@ app.get('/', (req, res) => {
             </div>
         </div>
         <div class="controls">
-            <button class="btn btn-primary" onclick="exportData()">Export Data</button>
-            <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
-            <button class="btn btn-secondary" onclick="loadLogins()">Refresh</button>
+            <button class="btn btn-primary" onclick="exportData()">📥 Export</button>
+            <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All</button>
+            <button class="btn btn-secondary" onclick="loadLogins()">🔄 Refresh</button>
         </div>
-        <input type="text" class="search-box" id="searchBox" placeholder="Search by name or key..." oninput="filterLogins()">
+        <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search by name, key or IP..." oninput="filterLogins()">
         <div class="logins-grid" id="loginsGrid">
-            <div class="empty-state" id="emptyState">
-                <div class="empty-icon">🔐</div>
-                <div>Waiting for logins...</div>
-            </div>
+            <div class="empty-state"><div class="empty-icon">🔐</div><div>Waiting for logins...</div></div>
         </div>
     </div>
     <div class="toast" id="toast"></div>
@@ -262,10 +261,11 @@ app.get('/', (req, res) => {
             const searchTerm = document.getElementById('searchBox').value.toLowerCase();
             const filtered = logins.filter(l => 
                 l.name.toLowerCase().includes(searchTerm) ||
-                l.key.toLowerCase().includes(searchTerm)
+                l.key.toLowerCase().includes(searchTerm) ||
+                (l.serverip && l.serverip.toLowerCase().includes(searchTerm))
             );
             if (filtered.length === 0) {
-                grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><div>No results found</div></div>';
+                grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><div>No results</div></div>';
             } else {
                 grid.innerHTML = filtered.map(l => \`
                     <div class="login-card \${l.type === 'unauthorized' ? 'unauthorized' : ''}">
@@ -279,7 +279,7 @@ app.get('/', (req, res) => {
                             </div>
                             <div class="header-right">
                                 <span class="status-badge \${l.type === 'unauthorized' ? 'status-unauthorized' : 'status-authorized'}">\${l.type === 'unauthorized' ? '⚠ DENIED' : '✓ LOGGED'}</span>
-                                <div class="login-datetime">\${l.date} • \${l.time}</div>
+                                <div class="login-datetime">\${l.date} at \${l.time}</div>
                             </div>
                         </div>
                         <div class="card-body">
@@ -287,6 +287,10 @@ app.get('/', (req, res) => {
                                 <div class="info-item auth-key">
                                     <div class="info-label">🔑 Auth Key</div>
                                     <div class="info-value">\${l.key}</div>
+                                </div>
+                                <div class="info-item server-ip">
+                                    <div class="info-label">🌐 Server IP</div>
+                                    <div class="info-value">\${l.serverip || 'Unknown'}</div>
                                 </div>
                                 <div class="info-item"><div class="info-label">❤️ Health</div><div class="info-value">\${l.hp}</div></div>
                                 <div class="info-item"><div class="info-label">🛡️ Armor</div><div class="info-value">\${l.ar}</div></div>
@@ -319,7 +323,7 @@ app.get('/', (req, res) => {
         function copyLogin(id) {
             const l = logins.find(x => x.id === id);
             if (l) {
-                navigator.clipboard.writeText(\`Player: \${l.name}\\nID: \${l.sid}\\nKey: \${l.key}\\nPosition: \${l.x}, \${l.y}, \${l.z}\\nZone: \${l.zone}\\nDate: \${l.date} \${l.time}\`);
+                navigator.clipboard.writeText('Player: ' + l.name + '\\nID: ' + l.sid + '\\nKey: ' + l.key + '\\nServer IP: ' + l.serverip + '\\nPosition: ' + l.x + ', ' + l.y + ', ' + l.z + '\\nZone: ' + l.zone + '\\nDate: ' + l.date + ' ' + l.time);
                 showToast('Copied!');
             }
         }
@@ -332,7 +336,7 @@ app.get('/', (req, res) => {
             if (confirm('Delete all records?')) {
                 await fetch('/api/logins', { method: 'DELETE' });
                 loadLogins();
-                showToast('All cleared!');
+                showToast('Cleared!');
             }
         }
         function exportData() {
