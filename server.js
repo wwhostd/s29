@@ -5,14 +5,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// تخزين الدخولات في الذاكرة
 let logins = [];
 
-// استقبال الدخول الجديد (GET request من Macho)
+// استقبال الدخول الجديد
 app.get('/log', (req, res) => {
+    const now = new Date();
     const login = {
         id: Date.now(),
-        name: req.query.name || 'Unknown',
+        name: decodeURIComponent(req.query.name || 'Unknown'),
         sid: req.query.sid || '0',
         key: req.query.key || 'Unknown',
         hp: req.query.hp || '0',
@@ -23,278 +23,231 @@ app.get('/log', (req, res) => {
         y: req.query.y || '0',
         z: req.query.z || '0',
         h: req.query.h || '0',
-        zone: req.query.zone || 'Unknown',
-        str: req.query.str || 'Unknown',
-        veh: req.query.veh || 'On Foot',
-        plt: req.query.plt || 'N/A',
-        vhp: req.query.vhp || 'N/A',
+        zone: decodeURIComponent(req.query.zone || 'Unknown'),
+        str: decodeURIComponent(req.query.str || 'Unknown'),
+        veh: decodeURIComponent(req.query.veh || 'OnFoot'),
+        plt: decodeURIComponent(req.query.plt || 'NA'),
+        vhp: req.query.vhp || 'NA',
         mdl: req.query.mdl || 'Unknown',
         pls: req.query.pls || '0',
-        timestamp: new Date().toLocaleString('ar-SA', { timeZone: 'Asia/Riyadh' })
+        type: req.query.type || 'authorized',
+        date: now.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+        time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
     };
     
     logins.unshift(login);
+    if (logins.length > 500) logins = logins.slice(0, 500);
     
-    // الاحتفاظ بآخر 500 دخول فقط
-    if (logins.length > 500) {
-        logins = logins.slice(0, 500);
-    }
-    
-    console.log('New login:', login.name, '- Key:', login.key);
+    console.log(`[${login.type.toUpperCase()}] ${login.name} - Key: ${login.key}`);
     res.send('OK');
 });
 
-// الحصول على كل الدخولات
-app.get('/api/logins', (req, res) => {
-    res.json(logins);
-});
-
-// حذف دخول معين
+app.get('/api/logins', (req, res) => res.json(logins));
 app.delete('/api/logins/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    logins = logins.filter(l => l.id !== id);
+    logins = logins.filter(l => l.id !== parseInt(req.params.id));
     res.json({ success: true });
 });
-
-// حذف كل الدخولات
 app.delete('/api/logins', (req, res) => {
     logins = [];
     res.json({ success: true });
 });
 
-// الصفحة الرئيسية
 app.get('/', (req, res) => {
     res.send(`
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>S29 Menu - Login Panel</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
             min-height: 100vh;
             color: #fff;
-            overflow-x: hidden;
-        }
-        .bg-animation {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-        .bg-animation::before {
-            content: '';
-            position: absolute;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: radial-gradient(circle at center, rgba(255, 165, 0, 0.03) 0%, transparent 50%);
-            animation: rotate 30s linear infinite;
-        }
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
         .header { text-align: center; padding: 40px 20px; }
         .logo {
-            font-size: 4em;
+            font-size: 3.5em;
             font-weight: 800;
-            background: linear-gradient(135deg, #ffa500 0%, #ff6b00 50%, #ffa500 100%);
+            background: linear-gradient(135deg, #ffa500 0%, #ff6b00 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: glow 2s ease-in-out infinite alternate;
         }
-        @keyframes glow {
-            from { filter: drop-shadow(0 0 20px rgba(255, 165, 0, 0.3)); }
-            to { filter: drop-shadow(0 0 40px rgba(255, 165, 0, 0.6)); }
-        }
-        .subtitle { color: #888; font-size: 1.2em; margin-top: 10px; letter-spacing: 3px; }
-        .stats-bar { display: flex; justify-content: center; gap: 30px; margin: 30px 0; flex-wrap: wrap; }
-        .stat-card {
-            background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(255, 165, 0, 0.05) 100%);
-            border: 1px solid rgba(255, 165, 0, 0.3);
-            border-radius: 15px;
-            padding: 20px 40px;
-            text-align: center;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-        .stat-card:hover { transform: translateY(-5px); border-color: #ffa500; box-shadow: 0 10px 40px rgba(255, 165, 0, 0.2); }
-        .stat-number { font-size: 2.5em; font-weight: 800; color: #ffa500; }
-        .stat-label { color: #888; font-size: 0.9em; margin-top: 5px; }
-        .controls { display: flex; justify-content: center; gap: 15px; margin: 30px 0; flex-wrap: wrap; }
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Tajawal', sans-serif;
-        }
-        .btn-primary { background: linear-gradient(135deg, #ffa500 0%, #ff6b00 100%); color: #000; }
-        .btn-primary:hover { transform: scale(1.05); box-shadow: 0 10px 30px rgba(255, 165, 0, 0.4); }
-        .btn-danger { background: linear-gradient(135deg, #ff4757 0%, #ff3838 100%); color: #fff; }
-        .btn-danger:hover { transform: scale(1.05); box-shadow: 0 10px 30px rgba(255, 71, 87, 0.4); }
-        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); }
-        .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); }
-        .search-container { display: flex; justify-content: center; margin: 20px 0; }
-        .search-box {
-            width: 100%; max-width: 500px;
-            padding: 15px 25px;
-            border: 2px solid rgba(255, 165, 0, 0.3);
-            border-radius: 50px;
-            background: rgba(0, 0, 0, 0.3);
-            color: #fff;
-            font-size: 1em;
-            font-family: 'Tajawal', sans-serif;
-            transition: all 0.3s ease;
-        }
-        .search-box:focus { outline: none; border-color: #ffa500; box-shadow: 0 0 30px rgba(255, 165, 0, 0.2); }
-        .logins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 25px; margin-top: 30px; }
-        .login-card {
-            background: linear-gradient(135deg, rgba(20, 20, 35, 0.9) 0%, rgba(15, 15, 25, 0.9) 100%);
-            border: 1px solid rgba(255, 165, 0, 0.2);
-            border-radius: 20px;
-            overflow: hidden;
-            transition: all 0.4s ease;
-            animation: slideIn 0.5s ease;
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .login-card:hover { transform: translateY(-10px); border-color: #ffa500; box-shadow: 0 20px 60px rgba(255, 165, 0, 0.15); }
-        .card-header {
-            background: linear-gradient(135deg, rgba(255, 165, 0, 0.2) 0%, rgba(255, 107, 0, 0.1) 100%);
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(255, 165, 0, 0.2);
-        }
-        .player-info { display: flex; align-items: center; gap: 15px; }
-        .player-avatar {
-            width: 50px; height: 50px;
-            background: linear-gradient(135deg, #ffa500, #ff6b00);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5em; font-weight: 800; color: #000;
-        }
-        .player-name { font-size: 1.3em; font-weight: 700; color: #fff; }
-        .player-id { color: #ffa500; font-size: 0.9em; }
-        .login-time { color: #888; font-size: 0.85em; text-align: left; }
-        .card-body { padding: 20px; }
-        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-        .info-item {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 12px 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .info-label { color: #888; font-size: 0.8em; margin-bottom: 5px; }
-        .info-value { color: #fff; font-size: 1em; font-weight: 600; word-break: break-all; }
-        .auth-key {
-            grid-column: span 2;
-            background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(255, 107, 0, 0.05) 100%);
-            border: 1px solid rgba(255, 165, 0, 0.3);
-        }
-        .auth-key .info-value { font-family: 'Courier New', monospace; font-size: 0.85em; color: #ffa500; }
-        .card-actions { padding: 15px 20px; display: flex; gap: 10px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
-        .action-btn {
-            flex: 1; padding: 10px; border: none; border-radius: 8px;
-            font-size: 0.9em; cursor: pointer; transition: all 0.3s ease; font-family: 'Tajawal', sans-serif;
-        }
-        .action-btn.copy { background: rgba(255, 165, 0, 0.2); color: #ffa500; }
-        .action-btn.copy:hover { background: rgba(255, 165, 0, 0.3); }
-        .action-btn.delete { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
-        .action-btn.delete:hover { background: rgba(255, 71, 87, 0.3); }
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 600; }
-        .status-online { background: rgba(46, 213, 115, 0.2); color: #2ed573; border: 1px solid rgba(46, 213, 115, 0.3); }
-        .empty-state { text-align: center; padding: 80px 20px; color: #666; }
-        .empty-icon { font-size: 5em; margin-bottom: 20px; opacity: 0.5; }
-        .empty-title { font-size: 1.5em; margin-bottom: 10px; color: #888; }
-        .toast {
-            position: fixed; bottom: 30px; right: 30px;
-            background: linear-gradient(135deg, #ffa500, #ff6b00);
-            color: #000; padding: 15px 25px; border-radius: 10px;
-            font-weight: 600; transform: translateX(200%);
-            transition: transform 0.3s ease; z-index: 1000;
-        }
-        .toast.show { transform: translateX(0); }
-        .live-indicator {
+        .subtitle { color: #666; font-size: 1.1em; margin-top: 10px; letter-spacing: 2px; }
+        .live-badge {
             display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(46, 213, 115, 0.2); padding: 8px 15px;
-            border-radius: 20px; font-size: 0.9em; color: #2ed573;
+            background: rgba(46, 213, 115, 0.15); padding: 8px 16px;
+            border-radius: 20px; font-size: 0.85em; color: #2ed573; margin-top: 15px;
         }
         .live-dot {
-            width: 10px; height: 10px; background: #2ed573;
+            width: 8px; height: 8px; background: #2ed573;
             border-radius: 50%; animation: pulse 1.5s infinite;
         }
         @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
+        .stats-bar { display: flex; justify-content: center; gap: 25px; margin: 30px 0; flex-wrap: wrap; }
+        .stat-card {
+            background: rgba(255, 165, 0, 0.08);
+            border: 1px solid rgba(255, 165, 0, 0.2);
+            border-radius: 12px;
+            padding: 18px 35px;
+            text-align: center;
+        }
+        .stat-number { font-size: 2.2em; font-weight: 700; color: #ffa500; }
+        .stat-label { color: #666; font-size: 0.85em; margin-top: 5px; }
+        .controls { display: flex; justify-content: center; gap: 12px; margin: 25px 0; flex-wrap: wrap; }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: linear-gradient(135deg, #ffa500, #ff6b00); color: #000; }
+        .btn-primary:hover { transform: scale(1.03); box-shadow: 0 5px 20px rgba(255, 165, 0, 0.3); }
+        .btn-danger { background: #ff4757; color: #fff; }
+        .btn-danger:hover { background: #ff3344; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.15); }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
+        .search-box {
+            width: 100%; max-width: 450px;
+            padding: 12px 20px;
+            border: 1px solid rgba(255, 165, 0, 0.25);
+            border-radius: 25px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 0.95em;
+            margin: 0 auto 25px;
+            display: block;
+        }
+        .search-box:focus { outline: none; border-color: #ffa500; }
+        .logins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+        .login-card {
+            background: rgba(18, 18, 28, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .login-card:hover { border-color: rgba(255, 165, 0, 0.4); transform: translateY(-5px); }
+        .login-card.unauthorized { border-color: rgba(255, 71, 87, 0.5); }
+        .login-card.unauthorized .card-header { background: linear-gradient(135deg, rgba(255, 71, 87, 0.2), rgba(255, 71, 87, 0.1)); }
+        .card-header {
+            background: linear-gradient(135deg, rgba(255, 165, 0, 0.15), rgba(255, 165, 0, 0.05));
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .player-info { display: flex; align-items: center; gap: 12px; }
+        .player-avatar {
+            width: 45px; height: 45px;
+            background: linear-gradient(135deg, #ffa500, #ff6b00);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3em; font-weight: 700; color: #000;
+        }
+        .login-card.unauthorized .player-avatar { background: linear-gradient(135deg, #ff4757, #ff3344); }
+        .player-name { font-size: 1.15em; font-weight: 600; }
+        .player-id { color: #ffa500; font-size: 0.85em; }
+        .login-card.unauthorized .player-id { color: #ff4757; }
+        .header-right { text-align: right; }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-authorized { background: rgba(46, 213, 115, 0.2); color: #2ed573; }
+        .status-unauthorized { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
+        .login-datetime { color: #555; font-size: 0.8em; margin-top: 6px; }
+        .card-body { padding: 16px 20px; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .info-item {
+            background: rgba(0, 0, 0, 0.25);
+            padding: 10px 12px;
+            border-radius: 8px;
+        }
+        .info-label { color: #555; font-size: 0.75em; margin-bottom: 3px; }
+        .info-value { color: #ddd; font-size: 0.9em; font-weight: 500; word-break: break-all; }
+        .auth-key {
+            grid-column: span 2;
+            background: rgba(255, 165, 0, 0.08);
+            border: 1px solid rgba(255, 165, 0, 0.2);
+        }
+        .auth-key .info-value { font-family: 'Courier New', monospace; font-size: 0.8em; color: #ffa500; }
+        .card-actions { padding: 12px 20px; display: flex; gap: 10px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+        .action-btn {
+            flex: 1; padding: 8px; border: none; border-radius: 6px;
+            font-size: 0.85em; cursor: pointer; transition: all 0.2s;
+        }
+        .action-btn.copy { background: rgba(255, 165, 0, 0.15); color: #ffa500; }
+        .action-btn.copy:hover { background: rgba(255, 165, 0, 0.25); }
+        .action-btn.delete { background: rgba(255, 71, 87, 0.15); color: #ff4757; }
+        .action-btn.delete:hover { background: rgba(255, 71, 87, 0.25); }
+        .empty-state { text-align: center; padding: 60px 20px; color: #444; }
+        .empty-icon { font-size: 4em; margin-bottom: 15px; }
+        .toast {
+            position: fixed; bottom: 25px; right: 25px;
+            background: #ffa500; color: #000; padding: 12px 22px;
+            border-radius: 8px; font-weight: 600; font-size: 0.9em;
+            transform: translateX(150%); transition: transform 0.3s; z-index: 1000;
+        }
+        .toast.show { transform: translateX(0); }
         @media (max-width: 768px) {
             .logins-grid { grid-template-columns: 1fr; }
             .logo { font-size: 2.5em; }
             .info-grid { grid-template-columns: 1fr; }
             .auth-key { grid-column: span 1; }
         }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0a0f; }
-        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #ffa500, #ff6b00); border-radius: 10px; }
     </style>
 </head>
 <body>
-    <div class="bg-animation"></div>
     <div class="container">
         <header class="header">
             <h1 class="logo">S29 MENU</h1>
             <p class="subtitle">LOGIN SECURITY PANEL</p>
-            <div style="margin-top: 15px;">
-                <span class="live-indicator"><span class="live-dot"></span> LIVE</span>
-            </div>
+            <div class="live-badge"><span class="live-dot"></span> LIVE MONITORING</div>
         </header>
         <div class="stats-bar">
             <div class="stat-card">
                 <div class="stat-number" id="totalLogins">0</div>
-                <div class="stat-label">إجمالي الدخولات</div>
+                <div class="stat-label">Total Logins</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="todayLogins">0</div>
-                <div class="stat-label">دخولات اليوم</div>
+                <div class="stat-number" id="authorizedLogins">0</div>
+                <div class="stat-label">Authorized</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="uniqueUsers">0</div>
-                <div class="stat-label">مستخدمين فريدين</div>
+                <div class="stat-number" id="unauthorizedLogins">0</div>
+                <div class="stat-label">Unauthorized</div>
             </div>
         </div>
         <div class="controls">
-            <button class="btn btn-primary" onclick="exportData()">📥 تصدير البيانات</button>
-            <button class="btn btn-danger" onclick="clearAll()">🗑️ حذف الكل</button>
-            <button class="btn btn-secondary" onclick="loadLogins()">🔄 تحديث</button>
+            <button class="btn btn-primary" onclick="exportData()">Export Data</button>
+            <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+            <button class="btn btn-secondary" onclick="loadLogins()">Refresh</button>
         </div>
-        <div class="search-container">
-            <input type="text" class="search-box" id="searchBox" placeholder="🔍 بحث بالاسم أو المفتاح..." oninput="filterLogins()">
-        </div>
+        <input type="text" class="search-box" id="searchBox" placeholder="Search by name or key..." oninput="filterLogins()">
         <div class="logins-grid" id="loginsGrid">
             <div class="empty-state" id="emptyState">
                 <div class="empty-icon">🔐</div>
-                <div class="empty-title">في انتظار تسجيلات الدخول...</div>
-                <p>سيتم عرض بيانات المستخدمين هنا عند فتح المنيو</p>
+                <div>Waiting for logins...</div>
             </div>
         </div>
     </div>
-    <div class="toast" id="toast">تم!</div>
+    <div class="toast" id="toast"></div>
     <script>
         let logins = [];
         async function loadLogins() {
@@ -309,14 +262,13 @@ app.get('/', (req, res) => {
             const searchTerm = document.getElementById('searchBox').value.toLowerCase();
             const filtered = logins.filter(l => 
                 l.name.toLowerCase().includes(searchTerm) ||
-                l.key.toLowerCase().includes(searchTerm) ||
-                l.zone.toLowerCase().includes(searchTerm)
+                l.key.toLowerCase().includes(searchTerm)
             );
             if (filtered.length === 0) {
-                grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><div class="empty-title">لا توجد نتائج</div></div>';
+                grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><div>No results found</div></div>';
             } else {
                 grid.innerHTML = filtered.map(l => \`
-                    <div class="login-card">
+                    <div class="login-card \${l.type === 'unauthorized' ? 'unauthorized' : ''}">
                         <div class="card-header">
                             <div class="player-info">
                                 <div class="player-avatar">\${l.name.charAt(0).toUpperCase()}</div>
@@ -325,9 +277,9 @@ app.get('/', (req, res) => {
                                     <div class="player-id">ID: \${l.sid}</div>
                                 </div>
                             </div>
-                            <div>
-                                <span class="status-badge status-online">LOGGED</span>
-                                <div class="login-time">\${l.timestamp}</div>
+                            <div class="header-right">
+                                <span class="status-badge \${l.type === 'unauthorized' ? 'status-unauthorized' : 'status-authorized'}">\${l.type === 'unauthorized' ? '⚠ DENIED' : '✓ LOGGED'}</span>
+                                <div class="login-datetime">\${l.date} • \${l.time}</div>
                             </div>
                         </div>
                         <div class="card-body">
@@ -350,8 +302,8 @@ app.get('/', (req, res) => {
                             </div>
                         </div>
                         <div class="card-actions">
-                            <button class="action-btn copy" onclick="copyLogin(\${l.id})">📋 نسخ</button>
-                            <button class="action-btn delete" onclick="deleteLogin(\${l.id})">🗑️ حذف</button>
+                            <button class="action-btn copy" onclick="copyLogin(\${l.id})">📋 Copy</button>
+                            <button class="action-btn delete" onclick="deleteLogin(\${l.id})">🗑️ Delete</button>
                         </div>
                     </div>
                 \`).join('');
@@ -360,28 +312,27 @@ app.get('/', (req, res) => {
         }
         function updateStats() {
             document.getElementById('totalLogins').textContent = logins.length;
-            const today = new Date().toLocaleDateString('ar-SA');
-            document.getElementById('todayLogins').textContent = logins.filter(l => l.timestamp && l.timestamp.includes(today)).length;
-            document.getElementById('uniqueUsers').textContent = [...new Set(logins.map(l => l.key))].length;
+            document.getElementById('authorizedLogins').textContent = logins.filter(l => l.type !== 'unauthorized').length;
+            document.getElementById('unauthorizedLogins').textContent = logins.filter(l => l.type === 'unauthorized').length;
         }
         function filterLogins() { renderLogins(); }
         function copyLogin(id) {
             const l = logins.find(x => x.id === id);
             if (l) {
-                navigator.clipboard.writeText(\`Player: \${l.name}\\nID: \${l.sid}\\nKey: \${l.key}\\nPos: \${l.x}, \${l.y}, \${l.z}\\nZone: \${l.zone}\\nTime: \${l.timestamp}\`);
-                showToast('تم النسخ!');
+                navigator.clipboard.writeText(\`Player: \${l.name}\\nID: \${l.sid}\\nKey: \${l.key}\\nPosition: \${l.x}, \${l.y}, \${l.z}\\nZone: \${l.zone}\\nDate: \${l.date} \${l.time}\`);
+                showToast('Copied!');
             }
         }
         async function deleteLogin(id) {
             await fetch('/api/logins/' + id, { method: 'DELETE' });
             loadLogins();
-            showToast('تم الحذف!');
+            showToast('Deleted!');
         }
         async function clearAll() {
-            if (confirm('حذف كل السجلات؟')) {
+            if (confirm('Delete all records?')) {
                 await fetch('/api/logins', { method: 'DELETE' });
                 loadLogins();
-                showToast('تم حذف الكل!');
+                showToast('All cleared!');
             }
         }
         function exportData() {
@@ -390,16 +341,15 @@ app.get('/', (req, res) => {
             a.href = URL.createObjectURL(blob);
             a.download = 's29_logins.json';
             a.click();
-            showToast('تم التصدير!');
+            showToast('Exported!');
         }
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
+            setTimeout(() => t.classList.remove('show'), 2500);
         }
         loadLogins();
-        setInterval(loadLogins, 3000);
     </script>
 </body>
 </html>
@@ -407,6 +357,4 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log('S29 Login Server running on port ' + PORT);
-});
+app.listen(PORT, () => console.log('S29 Server running on port ' + PORT));
