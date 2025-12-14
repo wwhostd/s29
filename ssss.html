@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>|  S29 Menu  |</title>
+    <title>|  S29 Menu1  |</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         
@@ -257,33 +257,59 @@
         }
         .input-field.highlighted { border-color: rgba(255, 165, 0, 0.7); background: rgba(255, 165, 0, 0.1); }
         .input-field:focus { outline: none; border-color: rgba(255, 165, 0, 0.8); }
+        .input-field.active-input {
+            border: 2px solid #4CAF50 !important;
+            background: rgba(76, 175, 80, 0.2) !important;
+            animation: inputBlink 1s infinite;
+        }
+        .menu-item.input-editing {
+            background: rgba(76, 175, 80, 0.15) !important;
+            border-left: 3px solid #4CAF50 !important;
+        }
+        @keyframes inputBlink {
+            0%, 100% { border-color: #4CAF50; }
+            50% { border-color: #81C784; }
+        }
 
-        .slider-container { display: flex; align-items: center; gap: 8px; max-width: 130px; }
+        .slider-container { display: flex; align-items: center; gap: 8px; width: 140px; }
         .slider {
             flex: 1;
-            height: 4px;
+            height: 6px;
             background: rgba(255, 165, 0, 0.2);
-            border-radius: 2px;
+            border-radius: 3px;
             position: relative;
             cursor: pointer;
+            border: 1px solid rgba(255, 165, 0, 0.3);
         }
         .slider-track {
             height: 100%;
-            background: #FFA500;
-            border-radius: 2px;
+            background: linear-gradient(90deg, #FFA500, #FFD700);
+            border-radius: 3px;
             position: relative;
-            transition: width 0.2s ease;
+            transition: width 0.1s ease;
         }
         .slider-thumb {
-            width: 12px;
-            height: 12px;
-            background: #FFA500;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
             border-radius: 50%;
             position: absolute;
-            right: -6px;
+            right: -7px;
             top: -4px;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
-        .slider-value { color: #FFA500; font-size: 10px; font-weight: 600; min-width: 35px; text-align: center; }
+        .slider-value { 
+            color: #FFA500; 
+            font-size: 11px; 
+            font-weight: 700; 
+            min-width: 40px; 
+            text-align: center;
+            background: rgba(255, 165, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 165, 0, 0.3);
+        }
 
         .phaze-footer {
             width: 420px;
@@ -501,6 +527,7 @@ var scrollPosition = 0;
 var sliderValues = {};
 var toggleStates = {};
 var inputValues = {};
+var isInputMode = false; // وضع الكتابة
 
 function initializeMenu() {
     var sliderItems = document.querySelectorAll('.menu-item[data-type="slider"]');
@@ -609,11 +636,12 @@ function updateItemCounter() {
     if (counter) counter.textContent = (activeItem + 1) + '/' + menuItems.length;
 }
 
-function adjustSlider(item, direction) {
+function adjustSlider(item, direction, speed) {
     var action = item.dataset.action;
     var min = parseInt(item.dataset.min) || 0;
     var max = parseInt(item.dataset.max) || 100;
-    var step = parseInt(item.dataset.step) || 1;
+    var baseStep = parseInt(item.dataset.step) || 1;
+    var step = baseStep * (speed || 1);
     var value = sliderValues[action] !== undefined ? sliderValues[action] : min;
     if (direction === 'right') value = Math.min(max, value + step);
     else if (direction === 'left') value = Math.max(min, value - step);
@@ -651,9 +679,65 @@ function activateItem() {
         result.value = sliderValues[action];
     } else if (type === 'input') {
         var input = item.querySelector('.input-field');
-        if (input) result.value = input.value;
+        if (input) {
+            if (!isInputMode) {
+                // دخول وضع الكتابة
+                isInputMode = true;
+                input.focus();
+                input.classList.add('active-input');
+                item.classList.add('input-editing');
+                result.inputMode = true;
+            } else {
+                // خروج من وضع الكتابة
+                isInputMode = false;
+                input.blur();
+                input.classList.remove('active-input');
+                item.classList.remove('input-editing');
+                inputValues[action] = input.value;
+                result.inputMode = false;
+                result.value = input.value;
+            }
+        }
     }
     return result;
+}
+
+function exitInputMode() {
+    if (isInputMode && menuItems[activeItem]) {
+        var item = menuItems[activeItem];
+        var input = item.querySelector('.input-field');
+        if (input) {
+            isInputMode = false;
+            input.blur();
+            input.classList.remove('active-input');
+            item.classList.remove('input-editing');
+            inputValues[item.dataset.action] = input.value;
+        }
+    }
+}
+
+function isInInputMode() {
+    return isInputMode;
+}
+
+function typeCharacter(char) {
+    if (isInputMode && menuItems[activeItem]) {
+        var input = menuItems[activeItem].querySelector('.input-field');
+        if (input) {
+            input.value += char;
+            inputValues[menuItems[activeItem].dataset.action] = input.value;
+        }
+    }
+}
+
+function deleteCharacter() {
+    if (isInputMode && menuItems[activeItem]) {
+        var input = menuItems[activeItem].querySelector('.input-field');
+        if (input && input.value.length > 0) {
+            input.value = input.value.slice(0, -1);
+            inputValues[menuItems[activeItem].dataset.action] = input.value;
+        }
+    }
 }
 
 function collectInputValues() {
@@ -668,7 +752,7 @@ function collectInputValues() {
 // ═══════════════════════════════════════════════════════════
 // الدوال المُصدّرة للـ Lua
 // ═══════════════════════════════════════════════════════════
-window.menuNavigate = function(direction) {
+window.menuNavigate = function(direction, speed) {
     if (direction === 'up') {
         if (menuItems.length > 0) {
             activeItem = (activeItem - 1 + menuItems.length) % menuItems.length;
@@ -683,11 +767,11 @@ window.menuNavigate = function(direction) {
         }
     } else if (direction === 'left') {
         if (menuItems[activeItem] && menuItems[activeItem].dataset.type === 'slider') {
-            adjustSlider(menuItems[activeItem], 'left');
+            adjustSlider(menuItems[activeItem], 'left', speed || 1);
         }
     } else if (direction === 'right') {
         if (menuItems[activeItem] && menuItems[activeItem].dataset.type === 'slider') {
-            adjustSlider(menuItems[activeItem], 'right');
+            adjustSlider(menuItems[activeItem], 'right', speed || 1);
         }
     }
     return { tab: currentTab, item: activeItem, action: menuItems[activeItem] ? menuItems[activeItem].dataset.action : null };
@@ -701,11 +785,33 @@ window.menuChangeTab = function(direction) {
 
 window.menuSelect = function() {
     var result = activateItem();
-    // إرسال الأكشن للـ Lua
-    if (result && window.invokeNative) {
-        window.invokeNative('executeAction', JSON.stringify(result));
-    }
     return result;
+};
+
+window.isInInputMode = function() {
+    return isInputMode;
+};
+
+window.exitInputMode = function() {
+    exitInputMode();
+};
+
+window.typeChar = function(char) {
+    typeCharacter(char);
+};
+
+window.deleteChar = function() {
+    deleteCharacter();
+};
+
+window.setInputValue = function(value) {
+    if (menuItems[activeItem] && menuItems[activeItem].dataset.type === 'input') {
+        var input = menuItems[activeItem].querySelector('.input-field');
+        if (input) {
+            input.value = value;
+            inputValues[menuItems[activeItem].dataset.action] = value;
+        }
+    }
 };
 
 window.getMenuState = function() {
