@@ -14,10 +14,9 @@
             background: transparent !important;
             min-height: 100vh;
             display: flex;
-            justify-content: flex-start;
+            justify-content: center;
             align-items: center;
             padding: 20px;
-            padding-left: 80px;
             color: #ffffff;
             overflow: hidden;
         }
@@ -59,6 +58,9 @@
             border: 2px solid rgba(255, 165, 0, 0.5);
             border-radius: 8px;
             margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .phaze-logo {
@@ -70,7 +72,6 @@
             letter-spacing: 3px;
             text-transform: uppercase;
             text-align: center;
-            line-height: 56px;
         }
 
         .phaze-menu {
@@ -306,8 +307,8 @@
         <div class="phaze-header"><span class="phaze-logo">S 2 9</span></div>
         <div class="phaze-menu">
             <div class="tabs-container">
-                <button class="tab-nav-arrow tab-nav-left">‹</button>
-                <button class="tab-nav-arrow tab-nav-right">›</button>
+                <div class="tab-nav-arrow tab-nav-left" onclick="changeTab(currentTab - 1)">‹</div>
+                <div class="tab-nav-arrow tab-nav-right" onclick="changeTab(currentTab + 1)">›</div>
                 <div class="tabs-display">
                     <div class="tab-btn active" data-tab="0">Main</div>
                     <div class="tab-btn" data-tab="1">Weapon</div>
@@ -491,190 +492,312 @@
 </div>
 
 <script>
-let currentTab = 0;
-let activeItem = 0;
-let allTabs = ['Main', 'Weapon', 'Money', 'Item', 'Vehicle', 'Crash', 'Juma', 'Trol', 'Modify'];
-let menuItems = [];
-let scrollPosition = 0;
-let sliderValues = {};
-let toggleStates = {};
+var currentTab = 0;
+var activeItem = 0;
+var allTabs = ['Main', 'Weapon', 'Money', 'Item', 'Vehicle', 'Crash', 'Juma', 'Trol', 'Modify'];
+var menuItems = [];
+var scrollPosition = 0;
+var sliderValues = {};
+var toggleStates = {};
 
 function initializeMenu() {
-    document.querySelectorAll('.menu-item[data-type="slider"]').forEach(item => {
+    var sliderItems = document.querySelectorAll('.menu-item[data-type="slider"]');
+    for (var i = 0; i < sliderItems.length; i++) {
+        var item = sliderItems[i];
         sliderValues[item.dataset.action] = parseInt(item.dataset.value) || 0;
-    });
+    }
     updateMenuItems();
     updateTabDisplay();
     updateSelection();
     updateScrollbar();
+    console.log('Menu initialized!');
 }
 
 function updateMenuItems() {
-    const activeTabContent = document.querySelector('.tab-content.active');
+    var activeTabContent = document.querySelector('.tab-content.active');
     if (activeTabContent) {
         menuItems = Array.from(activeTabContent.querySelectorAll('.menu-item'));
         activeItem = 0;
         scrollPosition = 0;
-        const container = activeTabContent.querySelector('.items-container');
+        var container = activeTabContent.querySelector('.items-container');
         if(container) container.style.transform = 'translateY(0px)';
         updateItemCounter();
     }
 }
 
 function updateTabDisplay() {
-    const tabsPerGroup = 4;
-    const currentGroupIndex = Math.floor(currentTab / tabsPerGroup);
-    const tabButtons = document.querySelectorAll(".tab-btn");
-    const startTab = currentGroupIndex * tabsPerGroup;
-    tabButtons.forEach((btn, index) => {
-        const tabIdx = startTab + index;
+    var tabsPerGroup = 4;
+    var currentGroupIndex = Math.floor(currentTab / tabsPerGroup);
+    var tabButtons = document.querySelectorAll(".tab-btn");
+    var startTab = currentGroupIndex * tabsPerGroup;
+    for (var index = 0; index < tabButtons.length; index++) {
+        var btn = tabButtons[index];
+        var tabIdx = startTab + index;
         if (tabIdx < allTabs.length) {
             btn.textContent = allTabs[tabIdx];
             btn.dataset.tab = tabIdx;
-            btn.classList.toggle("active", tabIdx === currentTab);
+            if (tabIdx === currentTab) {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
             btn.style.display = "block";
         } else {
             btn.style.display = "none";
         }
-    });
+    }
 }
 
 function changeTab(newIndex) {
-    currentTab = (newIndex + allTabs.length) % allTabs.length;
-    document.querySelectorAll(".tab-content").forEach(content => content.classList.remove("active"));
-    const targetTab = document.querySelector('.tab-content[data-tab="' + currentTab + '"]');
+    if (newIndex < 0) newIndex = allTabs.length - 1;
+    if (newIndex >= allTabs.length) newIndex = 0;
+    currentTab = newIndex;
+    
+    var allContents = document.querySelectorAll(".tab-content");
+    for (var i = 0; i < allContents.length; i++) {
+        allContents[i].classList.remove("active");
+    }
+    
+    var targetTab = document.querySelector('.tab-content[data-tab="' + currentTab + '"]');
     if (targetTab) targetTab.classList.add("active");
+    
     updateTabDisplay();
     updateMenuItems();
     updateSelection();
     updateScrollbar();
+    console.log('Changed to tab: ' + currentTab);
 }
 
 function updateSelection() {
-    menuItems.forEach(item => {
+    for (var i = 0; i < menuItems.length; i++) {
+        var item = menuItems[i];
         item.classList.remove('highlighted');
-        item.querySelectorAll('.action-btn, .toggle-switch, .input-field, .slider').forEach(el => el.classList.remove('highlighted'));
-    });
+        var actionBtns = item.querySelectorAll('.action-btn, .toggle-switch, .input-field, .slider');
+        for (var j = 0; j < actionBtns.length; j++) {
+            actionBtns[j].classList.remove('highlighted');
+        }
+    }
+    
     if (menuItems[activeItem]) {
         menuItems[activeItem].classList.add('highlighted');
-        menuItems[activeItem].querySelectorAll('.action-btn, .toggle-switch, .input-field, .slider').forEach(el => el.classList.add('highlighted'));
+        var elements = menuItems[activeItem].querySelectorAll('.action-btn, .toggle-switch, .input-field, .slider');
+        for (var k = 0; k < elements.length; k++) {
+            elements[k].classList.add('highlighted');
+        }
         scrollToActive();
     }
 }
 
 function scrollToActive() {
     if (!menuItems[activeItem]) return;
-    const container = document.querySelector('.tab-content.active .items-container');
-    const viewportHeight = 450;
-    const activeItemElement = menuItems[activeItem];
-    const itemTop = activeItemElement.offsetTop - container.offsetTop;
-    const itemHeight = activeItemElement.offsetHeight;
-    const totalContentHeight = container.scrollHeight;
-    const maxScroll = Math.max(0, totalContentHeight - viewportHeight);
-    if (itemTop < scrollPosition) scrollPosition = itemTop - 10;
-    else if (itemTop + itemHeight > scrollPosition + viewportHeight) scrollPosition = itemTop + itemHeight - viewportHeight + 10;
+    var container = document.querySelector('.tab-content.active .items-container');
+    if (!container) return;
+    
+    var viewportHeight = 450;
+    var activeItemElement = menuItems[activeItem];
+    var itemTop = activeItemElement.offsetTop - container.offsetTop;
+    var itemHeight = activeItemElement.offsetHeight;
+    var totalContentHeight = container.scrollHeight;
+    var maxScroll = Math.max(0, totalContentHeight - viewportHeight);
+    
+    if (itemTop < scrollPosition) {
+        scrollPosition = itemTop - 10;
+    } else if (itemTop + itemHeight > scrollPosition + viewportHeight) {
+        scrollPosition = itemTop + itemHeight - viewportHeight + 10;
+    }
+    
     scrollPosition = Math.max(0, Math.min(maxScroll, scrollPosition));
     container.style.transform = 'translateY(-' + scrollPosition + 'px)';
     updateScrollbar();
 }
 
 function updateScrollbar() {
-    const scrollbarThumb = document.querySelector('.scrollbar-thumb');
-    const activeTabContent = document.querySelector('.tab-content.active');
+    var scrollbarThumb = document.querySelector('.scrollbar-thumb');
+    var activeTabContent = document.querySelector('.tab-content.active');
     if (!activeTabContent) return;
-    const container = activeTabContent.querySelector('.items-container');
-    const viewportHeight = 450;
-    const totalContentHeight = container.scrollHeight;
-    const scrollbarHeight = 500;
-    if (totalContentHeight <= viewportHeight) { scrollbarThumb.style.height = '0px'; return; }
-    const thumbHeight = Math.max(20, (viewportHeight / totalContentHeight) * scrollbarHeight);
-    const maxThumbTop = scrollbarHeight - thumbHeight;
-    const scrollRatio = scrollPosition / (totalContentHeight - viewportHeight);
+    
+    var container = activeTabContent.querySelector('.items-container');
+    var viewportHeight = 450;
+    var totalContentHeight = container.scrollHeight;
+    var scrollbarHeight = 500;
+    
+    if (totalContentHeight <= viewportHeight) {
+        scrollbarThumb.style.height = '0px';
+        return;
+    }
+    
+    var thumbHeight = Math.max(20, (viewportHeight / totalContentHeight) * scrollbarHeight);
+    var maxThumbTop = scrollbarHeight - thumbHeight;
+    var scrollRatio = scrollPosition / (totalContentHeight - viewportHeight);
+    
     scrollbarThumb.style.height = thumbHeight + 'px';
     scrollbarThumb.style.top = (scrollRatio * maxThumbTop) + 'px';
 }
 
 function updateItemCounter() {
-    const counter = document.getElementById('item-counter');
+    var counter = document.getElementById('item-counter');
     if (counter) counter.textContent = (activeItem + 1) + '/' + menuItems.length;
 }
 
 function adjustSlider(item, direction) {
-    const action = item.dataset.action;
-    const min = parseInt(item.dataset.min) || 0;
-    const max = parseInt(item.dataset.max) || 100;
-    const step = parseInt(item.dataset.step) || 1;
-    let value = sliderValues[action] !== undefined ? sliderValues[action] : min;
-    if (direction === 'right') value = Math.min(max, value + step);
-    else if (direction === 'left') value = Math.max(min, value - step);
+    var action = item.dataset.action;
+    var min = parseInt(item.dataset.min) || 0;
+    var max = parseInt(item.dataset.max) || 100;
+    var step = parseInt(item.dataset.step) || 1;
+    var value = sliderValues[action] !== undefined ? sliderValues[action] : min;
+    
+    if (direction === 'right') {
+        value = Math.min(max, value + step);
+    } else if (direction === 'left') {
+        value = Math.max(min, value - step);
+    }
+    
     sliderValues[action] = value;
-    const track = item.querySelector('.slider-track');
-    const valueSpan = item.querySelector('.slider-value');
-    const percentage = ((value - min) / (max - min)) * 100;
+    
+    var track = item.querySelector('.slider-track');
+    var valueSpan = item.querySelector('.slider-value');
+    var percentage = ((value - min) / (max - min)) * 100;
+    
     track.style.width = percentage + '%';
     valueSpan.textContent = value;
+    console.log('Slider ' + action + ' = ' + value);
 }
 
 function toggleSwitch(item) {
-    const action = item.dataset.action;
-    const toggle = item.querySelector('.toggle-switch');
+    var action = item.dataset.action;
+    var toggle = item.querySelector('.toggle-switch');
+    
     toggleStates[action] = !toggleStates[action];
-    toggle.classList.toggle('active', toggleStates[action]);
-    item.classList.toggle('toggle-active', toggleStates[action]);
+    
+    if (toggleStates[action]) {
+        toggle.classList.add('active');
+        item.classList.add('toggle-active');
+    } else {
+        toggle.classList.remove('active');
+        item.classList.remove('toggle-active');
+    }
+    console.log('Toggle ' + action + ' = ' + toggleStates[action]);
 }
 
 function activateItem() {
     if (!menuItems[activeItem]) return;
-    const item = menuItems[activeItem];
-    const type = item.dataset.type;
-    const action = item.dataset.action;
-    if (type === 'toggle') toggleSwitch(item);
-    else if (type === 'button') {
-        const btn = item.querySelector('.action-btn');
-        if (btn) { btn.style.transform = 'scale(0.95)'; setTimeout(function() { btn.style.transform = ''; }, 150); }
-    }
-    else if (type === 'input') {
-        const input = item.querySelector('.input-field');
+    
+    var item = menuItems[activeItem];
+    var type = item.dataset.type;
+    var action = item.dataset.action;
+    
+    console.log('Activating: ' + action + ' (type: ' + type + ')');
+    
+    if (type === 'toggle') {
+        toggleSwitch(item);
+    } else if (type === 'button') {
+        var btn = item.querySelector('.action-btn');
+        if (btn) {
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(function() { btn.style.transform = ''; }, 150);
+        }
+        console.log('Button pressed: ' + action);
+    } else if (type === 'input') {
+        var input = item.querySelector('.input-field');
         if (input) input.focus();
     }
 }
 
-function getInputValues() {
-    const values = {};
-    document.querySelectorAll('.input-field').forEach(input => {
-        const item = input.closest('.menu-item');
-        if (item) values[item.dataset.action] = input.value;
-    });
-    Object.keys(sliderValues).forEach(key => { values[key] = sliderValues[key]; });
-    return values;
+function moveUp() {
+    if (menuItems.length > 0) {
+        activeItem = activeItem - 1;
+        if (activeItem < 0) activeItem = menuItems.length - 1;
+        updateSelection();
+        updateItemCounter();
+        console.log('Move up: ' + activeItem);
+    }
 }
 
+function moveDown() {
+    if (menuItems.length > 0) {
+        activeItem = activeItem + 1;
+        if (activeItem >= menuItems.length) activeItem = 0;
+        updateSelection();
+        updateItemCounter();
+        console.log('Move down: ' + activeItem);
+    }
+}
+
+function moveLeft() {
+    if (menuItems[activeItem] && menuItems[activeItem].dataset.type === 'slider') {
+        adjustSlider(menuItems[activeItem], 'left');
+    }
+}
+
+function moveRight() {
+    if (menuItems[activeItem] && menuItems[activeItem].dataset.type === 'slider') {
+        adjustSlider(menuItems[activeItem], 'right');
+    }
+}
+
+// Keyboard handler
+document.addEventListener('keydown', function(e) {
+    // Check if typing in input
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+        if (e.key === 'Escape' || e.key === 'Enter') {
+            document.activeElement.blur();
+        }
+        return;
+    }
+    
+    var key = e.key.toLowerCase();
+    console.log('Key pressed: ' + key);
+    
+    if (key === 'q') {
+        changeTab(currentTab - 1);
+        e.preventDefault();
+    } else if (key === 'e') {
+        changeTab(currentTab + 1);
+        e.preventDefault();
+    } else if (key === 'arrowdown' || key === 's') {
+        moveDown();
+        e.preventDefault();
+    } else if (key === 'arrowup' || key === 'w') {
+        moveUp();
+        e.preventDefault();
+    } else if (key === 'arrowright' || key === 'd') {
+        moveRight();
+        e.preventDefault();
+    } else if (key === 'arrowleft' || key === 'a') {
+        moveLeft();
+        e.preventDefault();
+    } else if (key === 'enter' || key === ' ') {
+        activateItem();
+        e.preventDefault();
+    }
+});
+
+// Mouse click on items
+document.addEventListener('click', function(e) {
+    var menuItem = e.target.closest('.menu-item');
+    if (menuItem) {
+        var index = menuItems.indexOf(menuItem);
+        if (index !== -1) {
+            activeItem = index;
+            updateSelection();
+            updateItemCounter();
+            activateItem();
+        }
+    }
+});
+
+// Initialize on load
+window.onload = initializeMenu;
+
+// Also try DOMContentLoaded
+document.addEventListener('DOMContentLoaded', initializeMenu);
+
+// Export functions for Lua
 window.getSliderValues = function() { return sliderValues; };
 window.getToggleStates = function() { return toggleStates; };
-window.getInputValues = getInputValues;
 window.getCurrentTab = function() { return currentTab; };
 window.getCurrentItem = function() { return activeItem; };
 window.getCurrentAction = function() { return menuItems[activeItem] ? menuItems[activeItem].dataset.action : null; };
-
-document.addEventListener('keydown', function(e) {
-    if (document.activeElement.tagName === 'INPUT') {
-        if (e.key === 'Escape' || e.key === 'Enter') document.activeElement.blur();
-        return;
-    }
-    let handled = false;
-    if (e.key === 'q' || e.key === 'Q') { changeTab(currentTab - 1); handled = true; }
-    else if (e.key === 'e' || e.key === 'E') { changeTab(currentTab + 1); handled = true; }
-    else if (e.key === 'ArrowDown') { if (menuItems.length > 0) { activeItem = (activeItem + 1) % menuItems.length; updateSelection(); updateItemCounter(); } handled = true; }
-    else if (e.key === 'ArrowUp') { if (menuItems.length > 0) { activeItem = (activeItem - 1 + menuItems.length) % menuItems.length; updateSelection(); updateItemCounter(); } handled = true; }
-    else if (e.key === 'ArrowRight') { if (menuItems[activeItem] && menuItems[activeItem].dataset.type === 'slider') adjustSlider(menuItems[activeItem], 'right'); handled = true; }
-    else if (e.key === 'ArrowLeft') { if (menuItems[activeItem] && menuItems[activeItem].dataset.type === 'slider') adjustSlider(menuItems[activeItem], 'left'); handled = true; }
-    else if (e.key === 'Enter' || e.key === ' ') { activateItem(); handled = true; }
-    if (handled) { e.preventDefault(); e.stopPropagation(); }
-});
-
-document.querySelector('.tab-nav-left').addEventListener('click', function() { changeTab(currentTab - 1); });
-document.querySelector('.tab-nav-right').addEventListener('click', function() { changeTab(currentTab + 1); });
-document.addEventListener('DOMContentLoaded', initializeMenu);
 </script>
 </body>
 </html>
