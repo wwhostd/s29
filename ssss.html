@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S29 Menu</title>
+    <title>|  S29 Menu  |</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         
@@ -700,7 +700,12 @@ window.menuChangeTab = function(direction) {
 };
 
 window.menuSelect = function() {
-    return activateItem();
+    var result = activateItem();
+    // إرسال الأكشن للـ Lua
+    if (result && window.invokeNative) {
+        window.invokeNative('executeAction', JSON.stringify(result));
+    }
+    return result;
 };
 
 window.getMenuState = function() {
