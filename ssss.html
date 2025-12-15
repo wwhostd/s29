@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>|  S29 Menu2  |</title>
+    <title>|  S29 Menu3  |</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         
@@ -325,6 +325,89 @@
         }
         .footer-left { color: #FFA500; }
         .footer-right { color: #FFA500; font-weight: 600; }
+
+        /* Virtual Keyboard Styles */
+        .virtual-keyboard {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.98);
+            border: 2px solid rgba(255, 165, 0, 0.6);
+            border-radius: 10px;
+            padding: 15px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 0 30px rgba(255, 165, 0, 0.3);
+        }
+        .virtual-keyboard.active { display: block; }
+        .vk-title {
+            text-align: center;
+            color: #FFA500;
+            font-size: 12px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .vk-display {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 165, 0, 0.4);
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            min-height: 30px;
+            color: #4CAF50;
+            font-size: 14px;
+            font-family: monospace;
+            text-align: center;
+        }
+        .vk-row { display: flex; justify-content: center; gap: 4px; margin-bottom: 4px; }
+        .vk-key {
+            min-width: 28px;
+            height: 28px;
+            background: rgba(255, 165, 0, 0.15);
+            border: 1px solid rgba(255, 165, 0, 0.4);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+        .vk-key:hover {
+            background: rgba(255, 165, 0, 0.35);
+            transform: scale(1.05);
+        }
+        .vk-key:active {
+            background: rgba(255, 165, 0, 0.5);
+            transform: scale(0.95);
+        }
+        .vk-key.special {
+            min-width: 50px;
+            background: rgba(255, 165, 0, 0.25);
+        }
+        .vk-key.enter {
+            min-width: 60px;
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+            color: #4CAF50;
+        }
+        .vk-key.enter:hover { background: rgba(76, 175, 80, 0.5); }
+        .vk-key.backspace {
+            min-width: 50px;
+            background: rgba(244, 67, 54, 0.2);
+            border-color: rgba(244, 67, 54, 0.4);
+            color: #f44336;
+        }
+        .vk-key.backspace:hover { background: rgba(244, 67, 54, 0.4); }
+        .vk-key.space { min-width: 120px; }
+        .vk-key.cancel {
+            background: rgba(244, 67, 54, 0.15);
+            border-color: rgba(244, 67, 54, 0.3);
+            color: #f44336;
+        }
     </style>
 </head>
 <body>
@@ -518,6 +601,62 @@
     </div>
 </div>
 
+<!-- Virtual Keyboard -->
+<div class="virtual-keyboard" id="virtualKeyboard">
+    <div class="vk-title">⌨️ KEYBOARD - اضغط على الحروف</div>
+    <div class="vk-display" id="vkDisplay"></div>
+    <div class="vk-row">
+        <div class="vk-key" onclick="vkType('1')">1</div>
+        <div class="vk-key" onclick="vkType('2')">2</div>
+        <div class="vk-key" onclick="vkType('3')">3</div>
+        <div class="vk-key" onclick="vkType('4')">4</div>
+        <div class="vk-key" onclick="vkType('5')">5</div>
+        <div class="vk-key" onclick="vkType('6')">6</div>
+        <div class="vk-key" onclick="vkType('7')">7</div>
+        <div class="vk-key" onclick="vkType('8')">8</div>
+        <div class="vk-key" onclick="vkType('9')">9</div>
+        <div class="vk-key" onclick="vkType('0')">0</div>
+    </div>
+    <div class="vk-row">
+        <div class="vk-key" onclick="vkType('Q')">Q</div>
+        <div class="vk-key" onclick="vkType('W')">W</div>
+        <div class="vk-key" onclick="vkType('E')">E</div>
+        <div class="vk-key" onclick="vkType('R')">R</div>
+        <div class="vk-key" onclick="vkType('T')">T</div>
+        <div class="vk-key" onclick="vkType('Y')">Y</div>
+        <div class="vk-key" onclick="vkType('U')">U</div>
+        <div class="vk-key" onclick="vkType('I')">I</div>
+        <div class="vk-key" onclick="vkType('O')">O</div>
+        <div class="vk-key" onclick="vkType('P')">P</div>
+    </div>
+    <div class="vk-row">
+        <div class="vk-key" onclick="vkType('A')">A</div>
+        <div class="vk-key" onclick="vkType('S')">S</div>
+        <div class="vk-key" onclick="vkType('D')">D</div>
+        <div class="vk-key" onclick="vkType('F')">F</div>
+        <div class="vk-key" onclick="vkType('G')">G</div>
+        <div class="vk-key" onclick="vkType('H')">H</div>
+        <div class="vk-key" onclick="vkType('J')">J</div>
+        <div class="vk-key" onclick="vkType('K')">K</div>
+        <div class="vk-key" onclick="vkType('L')">L</div>
+    </div>
+    <div class="vk-row">
+        <div class="vk-key" onclick="vkType('Z')">Z</div>
+        <div class="vk-key" onclick="vkType('X')">X</div>
+        <div class="vk-key" onclick="vkType('C')">C</div>
+        <div class="vk-key" onclick="vkType('V')">V</div>
+        <div class="vk-key" onclick="vkType('B')">B</div>
+        <div class="vk-key" onclick="vkType('N')">N</div>
+        <div class="vk-key" onclick="vkType('M')">M</div>
+        <div class="vk-key backspace" onclick="vkBackspace()">⌫</div>
+    </div>
+    <div class="vk-row">
+        <div class="vk-key cancel" onclick="vkCancel()">ESC</div>
+        <div class="vk-key space" onclick="vkType(' ')">SPACE</div>
+        <div class="vk-key enter" onclick="vkEnter()">ENTER ✓</div>
+    </div>
+</div>
+
 <script>
 var currentTab = 0;
 var activeItem = 0;
@@ -528,6 +667,7 @@ var sliderValues = {};
 var toggleStates = {};
 var inputValues = {};
 var isInputMode = false; // وضع الكتابة
+var vkCurrentValue = ''; // قيمة الكيبورد الافتراضي
 
 function initializeMenu() {
     var sliderItems = document.querySelectorAll('.menu-item[data-type="slider"]');
@@ -681,16 +821,17 @@ function activateItem() {
         var input = item.querySelector('.input-field');
         if (input) {
             if (!isInputMode) {
-                // دخول وضع الكتابة
+                // دخول وضع الكتابة - أظهر الكيبورد الافتراضي
                 isInputMode = true;
-                input.focus();
                 input.classList.add('active-input');
                 item.classList.add('input-editing');
+                vkCurrentValue = input.value || '';
+                showVirtualKeyboard();
                 result.inputMode = true;
             } else {
                 // خروج من وضع الكتابة
+                hideVirtualKeyboard();
                 isInputMode = false;
-                input.blur();
                 input.classList.remove('active-input');
                 item.classList.remove('input-editing');
                 inputValues[action] = input.value;
@@ -708,12 +849,83 @@ function exitInputMode() {
         var input = item.querySelector('.input-field');
         if (input) {
             isInputMode = false;
-            input.blur();
+            hideVirtualKeyboard();
             input.classList.remove('active-input');
             item.classList.remove('input-editing');
             inputValues[item.dataset.action] = input.value;
         }
     }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Virtual Keyboard Functions
+// ═══════════════════════════════════════════════════════════
+function showVirtualKeyboard() {
+    var vk = document.getElementById('virtualKeyboard');
+    var display = document.getElementById('vkDisplay');
+    if (vk) {
+        vk.classList.add('active');
+        display.textContent = vkCurrentValue || '|';
+    }
+}
+
+function hideVirtualKeyboard() {
+    var vk = document.getElementById('virtualKeyboard');
+    if (vk) vk.classList.remove('active');
+}
+
+function updateVkDisplay() {
+    var display = document.getElementById('vkDisplay');
+    if (display) display.textContent = vkCurrentValue + '|';
+    // حدث الـ input field أيضاً
+    if (menuItems[activeItem]) {
+        var input = menuItems[activeItem].querySelector('.input-field');
+        if (input) {
+            input.value = vkCurrentValue;
+            inputValues[menuItems[activeItem].dataset.action] = vkCurrentValue;
+        }
+    }
+}
+
+function vkType(char) {
+    vkCurrentValue += char;
+    updateVkDisplay();
+}
+
+function vkBackspace() {
+    if (vkCurrentValue.length > 0) {
+        vkCurrentValue = vkCurrentValue.slice(0, -1);
+        updateVkDisplay();
+    }
+}
+
+function vkEnter() {
+    // حفظ القيمة وإغلاق الكيبورد
+    if (menuItems[activeItem]) {
+        var input = menuItems[activeItem].querySelector('.input-field');
+        if (input) {
+            input.value = vkCurrentValue;
+            inputValues[menuItems[activeItem].dataset.action] = vkCurrentValue;
+            input.classList.remove('active-input');
+            menuItems[activeItem].classList.remove('input-editing');
+        }
+    }
+    isInputMode = false;
+    hideVirtualKeyboard();
+}
+
+function vkCancel() {
+    // إلغاء بدون حفظ
+    if (menuItems[activeItem]) {
+        var input = menuItems[activeItem].querySelector('.input-field');
+        if (input) {
+            input.classList.remove('active-input');
+            menuItems[activeItem].classList.remove('input-editing');
+        }
+    }
+    vkCurrentValue = '';
+    isInputMode = false;
+    hideVirtualKeyboard();
 }
 
 function isInInputMode() {
@@ -831,6 +1043,14 @@ window.getMenuState = function() {
 window.getSliderValues = function() { return sliderValues; };
 window.getToggleStates = function() { return toggleStates; };
 window.getInputValues = function() { collectInputValues(); return inputValues; };
+
+// Virtual Keyboard exports
+window.showVirtualKeyboard = showVirtualKeyboard;
+window.hideVirtualKeyboard = hideVirtualKeyboard;
+window.vkType = vkType;
+window.vkBackspace = vkBackspace;
+window.vkEnter = vkEnter;
+window.vkCancel = vkCancel;
 
 // Keyboard للمتصفح فقط
 document.addEventListener('keydown', function(e) {
